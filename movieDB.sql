@@ -1,3 +1,6 @@
+create database movieDB;
+use movieDB;
+
 -- Create Theatres Table
 CREATE TABLE Theatres (
     TheatreID INT IDENTITY(1,1) PRIMARY KEY,
@@ -58,6 +61,7 @@ CREATE TABLE Bookings (
     BookingDate DATETIME DEFAULT GETDATE(),
     ShowTimeID INT NOT NULL,
     NumberOfSeats INT NOT NULL CHECK (NumberOfSeats > 0),
+    Seats NVARCHAR(MAX) NOT NULL, -- Comma-separated seat numbers
     TotalPrice DECIMAL(10, 2) NOT NULL CHECK (TotalPrice >= 0),
     Status NVARCHAR(20) DEFAULT 'Pending',
     PaymentMethod NVARCHAR(50),
@@ -90,14 +94,6 @@ CREATE TABLE Reviews (
     FOREIGN KEY (MovieID) REFERENCES Movies(MovieID)
 );
 
--- Create BookingSeats Table
-CREATE TABLE BookingSeats (
-    BookingSeatID INT IDENTITY(1,1) PRIMARY KEY,
-    BookingID INT,
-    SeatIndex INT, -- Index position in the SeatAvailability string
-    FOREIGN KEY (BookingID) REFERENCES Bookings(BookingID)
-);
-
 -- Insert sample data into Theatres Table
 INSERT INTO Theatres (Name, Location, TotalSeats) VALUES
 ('Grand Cinema', 'Downtown', 100),
@@ -119,15 +115,9 @@ INSERT INTO ShowTimes (MovieID, TheatreID, ShowDate, StartTime, EndTime, Availab
 (2, 2, '2024-08-11', '20:00', '22:16', 200, '11111111111111111111'); -- 20 seats available
 
 -- Insert sample data into Bookings Table
-INSERT INTO Bookings (UserID, MovieID, TheatreID, ShowTimeID, NumberOfSeats, TotalPrice, Status, PaymentMethod) VALUES
-(1, 1, 1, 1, 2, 20.00, 'Confirmed', 'Credit Card'),
-(1, 2, 2, 2, 1, 10.00, 'Confirmed', 'Debit Card');
-
--- Insert sample data into BookingSeats Table
-INSERT INTO BookingSeats (BookingID, SeatIndex) VALUES
-(1, 0), -- A1 as 0th index
-(1, 1), -- A2 as 1st index
-(2, 2); -- B1 as 2nd index
+INSERT INTO Bookings (UserID, MovieID, TheatreID, ShowTimeID, NumberOfSeats, Seats, TotalPrice, Status, PaymentMethod) VALUES
+(1, 1, 1, 1, 2, '01,02', 20.00, 'Confirmed', 'Credit Card'),
+(1, 2, 2, 2, 1, '03', 10.00, 'Confirmed', 'Debit Card');
 
 -- Insert sample data into Payments Table
 INSERT INTO Payments (BookingID, Amount, PaymentMethod, TransactionID) VALUES
@@ -152,11 +142,10 @@ WHERE s.MovieID = 1;
 
 -- 3. Retrieve All Bookings Made by a Specific User with Seat Numbers
 -- Replace 1 with the desired UserID
-SELECT b.BookingID, m.Title, t.Name AS TheatreName, b.BookingDate, b.NumberOfSeats, b.TotalPrice, b.Status, bs.SeatIndex
+SELECT b.BookingID, m.Title, t.Name AS TheatreName, b.BookingDate, b.NumberOfSeats, b.Seats, b.TotalPrice, b.Status
 FROM Bookings b
 JOIN Movies m ON b.MovieID = m.MovieID
 JOIN Theatres t ON b.TheatreID = t.TheatreID
-JOIN BookingSeats bs ON b.BookingID = bs.BookingID
 WHERE b.UserID = 1;
 
 -- 4. Calculate Total Revenue from Bookings
@@ -203,11 +192,10 @@ JOIN Bookings b ON u.UserID = b.UserID;
 
 -- 11. Get Booking Details by Booking ID with Seat Numbers
 -- Replace 1 with the desired BookingID
-SELECT b.BookingID, m.Title, t.Name AS TheatreName, b.BookingDate, b.NumberOfSeats, b.TotalPrice, b.Status, bs.SeatIndex
+SELECT b.BookingID, m.Title, t.Name AS TheatreName, b.BookingDate, b.NumberOfSeats, b.Seats, b.TotalPrice, b.Status
 FROM Bookings b
 JOIN Movies m ON b.MovieID = m.MovieID
 JOIN Theatres t ON b.TheatreID = t.TheatreID
-JOIN BookingSeats bs ON b.BookingID = bs.BookingID
 WHERE b.BookingID = 1;
 
 -- 12. Get Total Bookings and Revenue per Movie
@@ -304,4 +292,3 @@ SELECT s.ShowTimeID, s.ShowDate, s.StartTime, s.EndTime, s.AvailableSeats
 FROM ShowTimes s
 WHERE s.MovieID = 1 AND s.TheatreID = 1
 ORDER BY s.ShowDate, s.StartTime;
-
